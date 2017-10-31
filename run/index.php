@@ -9,7 +9,7 @@ defined('RUA_ENV_DEV') or define('RUA_ENV_DEV', true);
 require(__DIR__ . '/../vendor/autoload.php');
 
 //引入框架文件
-require(__DIR__ . '/../vendor/rua/framework/Builder.php');
+require(__DIR__ . '/../vendor/nameiop/rua/framework/Builder.php');
 
 
 //运行
