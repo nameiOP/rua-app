@@ -8,7 +8,22 @@
 		'rootPath'=>dirname(__DIR__),	
 		
 		
-		
+		'bricks'=>[
+
+
+			'command'=>[
+				'class'=>'rua\bricks\command',
+			],
+
+
+
+			'console'=>[
+				'class'=>'rua\bricks\command',
+			],
+
+		],
+
+
 	];
 	
 	
