@@ -14,6 +14,15 @@ class tcp extends server
 
 
 	/**
+	 *显示界面
+	 */
+	public function displayUI(){
+
+		echo 'UI';
+	}
+
+
+	/**
 	 * 配置
 	 *
 	 */
@@ -54,7 +63,7 @@ class tcp extends server
 	 *
 	 */
 	public function run(){
-
+		echo 'run';
 	}
 }
 
