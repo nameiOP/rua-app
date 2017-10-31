@@ -1,0 +1,21 @@
+{
+    "name": "nameiop/rua-app",
+    "description": "php socket framework",
+    "keywords": ["php", "socket"],
+    "authors" : [
+        {
+            "name": "liubin",
+            "email": "ruabye@126.com",
+            "homepage": "http://blog.ruaby.com"
+        }
+    ],
+    "require": {
+        "php": ">=5.6",
+    	"nameiop/rua":"dev-master"
+    },
+    "require-dev": {
+    },
+    "autoload": {
+    }
+}
+
