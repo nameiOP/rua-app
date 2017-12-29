@@ -10,7 +10,10 @@ require(__DIR__ . '/../vendor/autoload.php');
 
 //引入框架文件
 require(__DIR__ . '/../vendor/nameiop/rua/framework/Builder.php');
+require(__DIR__ . '/../vendor/nameiop/rua/framework/event/event.php');
 
+
+date_default_timezone_set('Asia/Shanghai');
 
 //运行
 $config = require(__DIR__ . '/../config/cli.php');
