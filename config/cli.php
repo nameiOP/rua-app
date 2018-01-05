@@ -9,12 +9,19 @@
 
 
 		//服务器启动脚本
-		'exec'=>'@app/exec/server.php',
+		'server_exec'=>'@app/exec/server.php',
+
+
+		//客户端启动脚本
+		'client_exec'=>'@app/exec/client.php',
+
 
 
 
 		/**
 		 * bricks
+		 * 在 application(house) 初始化的时候,通过魔术方法 __set(),自动调用 setBricks(),将组件注册进 application->_definitions中
+		 * 通过 application->get(id) 方式获取组件对象
 		 */
 		'bricks'=>[
 
@@ -35,24 +42,58 @@
 			],
 
 
+
+
 			/**
-			 * 服务器配置信息
+			 * io模型
 			 */
-			'server'=>[
-				'class'=>'rsk\server\server',
-				'host'=>'0.0.0.0',
-				'protocol'=>'http',
-				'protocolClass'=>'app\protocol\http',
-				'port'=>8000
+			'io'=>[
+				'class'=>'rsk\io\ioSelect',
+				//'class'=>'rsk\io\ioLoop',
 			],
 
 
 			/**
-			 *
+			 * 协议类型
+			 */
+			'protocol'=>[
+				'name'=>'eof',
+				'class'=>'rsk\protocol\server\eof',
+
+			],
+
+
+
+			/**
+			 * 服务器配置信息
+			 */
+/*
+			'server'=>[
+				'class'=>'rsk\server\server',
+				'host'=>'0.0.0.0',
+				'port'=>8000,
+				'maxConnectLength'=>5
+			],
+*/
+
+
+			/**
+			 * 服务器配置信息
+			 */
+
+			'server'=>[
+				'class'=>'rsk\server\server',
+				'host'=>'0.0.0.0',
+				'port'=>8000,
+				'maxConnectLength'=> 5,
+			],
+
+
+			/**
+			 *客户端 配置信息
 			 */
 			'client'=>[
-				'class'=>'',
-				'bin'=>'',
+				'class'=>'rsk\client\client',
 			],
 
 

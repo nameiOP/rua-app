@@ -1,0 +1,141 @@
+{
+    "_readme": [
+        "This file locks the dependencies of your project to a known state",
+        "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
+        "This file is @generated automatically"
+    ],
+    "content-hash": "050045253710309eda0ee777e82d693b",
+    "packages": [
+        {
+            "name": "nameiop/rua",
+            "version": "0.0.4",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/nameiOP/rua.git",
+                "reference": "72e1a02fade6bc64fdc7d51789ca6cabe7591e8e"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://files.phpcomposer.com/files/nameiOP/rua/72e1a02fade6bc64fdc7d51789ca6cabe7591e8e.zip",
+                "reference": "72e1a02fade6bc64fdc7d51789ca6cabe7591e8e",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=5.6"
+            },
+            "type": "library",
+            "autoload": {
+                "files": [
+                    "framework/helpers/helpers.php"
+                ],
+                "psr-4": {
+                    "rua\\": "framework/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "authors": [
+                {
+                    "name": "liubin",
+                    "email": "ruabye@126.com",
+                    "homepage": "http://blog.ruaby.com"
+                }
+            ],
+            "description": "php socket framework",
+            "keywords": [
+                "Socket",
+                "php"
+            ],
+            "time": "2017-10-31T09:05:37+00:00"
+        },
+        {
+            "name": "nameiop/rua-fork",
+            "version": "0.0.2",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/nameiOP/rua-fork.git",
+                "reference": "6c46dc58749008c95465a199b890e9204aa673cf"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://files.phpcomposer.com/files/nameiOP/rua-fork/6c46dc58749008c95465a199b890e9204aa673cf.zip",
+                "reference": "6c46dc58749008c95465a199b890e9204aa673cf",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=5.6"
+            },
+            "type": "library",
+            "autoload": {
+                "files": [],
+                "psr-4": {
+                    "pfork\\": "fork/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "authors": [
+                {
+                    "name": "liubin",
+                    "email": "ruabye@126.com",
+                    "homepage": "http://blog.ruaby.com"
+                }
+            ],
+            "description": "php fork",
+            "keywords": [
+                "fork",
+                "php",
+                "rua"
+            ],
+            "time": "2018-01-03T02:26:03+00:00"
+        },
+        {
+            "name": "nameiop/rua-socket",
+            "version": "0.0.3",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/nameiOP/rua-socket.git",
+                "reference": "47f4c18b0f8576d3dfb4ab11d77997d08f968c0c"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://files.phpcomposer.com/files/nameiOP/rua-socket/47f4c18b0f8576d3dfb4ab11d77997d08f968c0c.zip",
+                "reference": "47f4c18b0f8576d3dfb4ab11d77997d08f968c0c",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=5.6"
+            },
+            "type": "library",
+            "autoload": {
+                "files": [],
+                "psr-4": {
+                    "rsk\\": "socket/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "authors": [
+                {
+                    "name": "liubin",
+                    "email": "ruabye@126.com",
+                    "homepage": "http://blog.ruaby.com"
+                }
+            ],
+            "description": "php socket",
+            "keywords": [
+                "Socket",
+                "php",
+                "rua"
+            ],
+            "time": "2017-10-31T08:42:09+00:00"
+        }
+    ],
+    "packages-dev": [],
+    "aliases": [],
+    "minimum-stability": "stable",
+    "stability-flags": [],
+    "prefer-stable": false,
+    "prefer-lowest": false,
+    "platform": {
+        "php": ">=5.6"
+    },
+    "platform-dev": []
+}

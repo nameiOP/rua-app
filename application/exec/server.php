@@ -18,7 +18,7 @@ Builder::$server->on(\rsk\server\server::EVENT_RSK_START,function( \rsk\event\st
 
     $server = $event->server;
 
-    console('start');
+
 
 
 });
@@ -31,7 +31,7 @@ Builder::$server->on(\rsk\server\server::EVENT_RSK_START,function( \rsk\event\st
  *
  *
  */
-Builder::$server->on(\rsk\server\server::EVENT_RSK_CONNECT,function(\rsk\event\connectEvent $event){
+Builder::$server->on(\rsk\server\server::EVENT_RSK_ACCEPT,function(\rsk\event\acceptEvent $event){
 
     $server = $event->server;
     $fd = $event->fd;
@@ -53,22 +53,29 @@ Builder::$server->on(\rsk\server\server::EVENT_RSK_RECEIVE,function(\rsk\event\r
 
     $server = $event->server;
     $fd = $event->fd;
-    //$data = $event->receive_data;
+    $data = $event->receive_data;
 
-    $mess = 'now time is : '.date('Y-m-d H:i:s',time());
+    /*
+    $mess = '<h3>now time is : '.date('Y-m-d H:i:s',time()).'<h3>';
+    $mess .= "<h3>online client num:".$server->getConnect()->count()."</h3>\r\n";
     $length = strlen($mess);
 
     $response = "HTTP/1.1 200 OK\r\n";
     $response .= "Date: Mon, 10 Aug 2015 06:22:08 GMT\r\n";
-    $response .= "Connection: keep-alive\r\n";
+    $response .= "Connection: Keep-Alive\r\n";
     $response .= "Content-Length: ".$length."\r\n";
-    $response .= "Content-Type: text/html;charset=utf-8\r\n\r\n";
+    $response .= "Content-Type: text/html;charset=utf-8\r\n";
+    $response .= "\r\n";
     $response .= $mess;
     $response .= "\r\n";
 
-    console('send to client fd :'.$fd .' current link :'.count($server->socketReadCollect)."\r\n==============================",'send');
-
+    console('[[ send ]] to client fd :'.$fd .' - online client num :'.$server->getConnect()->count(),'server-bin');
     $server->send($fd,$response);
+    */
+
+
+    $server->send($fd,$data);
+
 });
 
 
@@ -82,7 +89,8 @@ Builder::$server->on(\rsk\server\server::EVENT_RSK_STOP,function(\rsk\event\stop
 
     $server = $event->server;
     $fd = $event->fd;
-    console('client stop connect [fd] '.$fd, 'server');
+    console('[[ stop ]]client stop connect [fd] '.$fd, 'server-bin');
+    console("\r\n=====================".$fd."====================================",'server-bin');
     $server->close($fd);
 });
 
