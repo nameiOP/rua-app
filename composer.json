@@ -13,7 +13,7 @@
         "php": ">=5.6",
     	"nameiop/rua":"~0.1.0",
         "nameiop/rua-socket":"~0.1.0",
-        "nameiop/rua-fork": "^0.0.2"
+        "nameiop/rua-fork": "~0.1.0"
     },
     "require-dev": {
     },
