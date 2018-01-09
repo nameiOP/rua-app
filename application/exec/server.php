@@ -35,8 +35,36 @@ Builder::$server->on(\rsk\server\server::EVENT_RSK_ACCEPT,function(\rsk\event\ac
 
     $server = $event->server;
     $fd = $event->fd;
-    //console($fd . ' 连接','客户端');
-    //$server->send($fd,'欢迎连接');
+
+
+    //广播上线通知
+    $onlineConn = $server->getConnect();
+
+
+
+
+    //获取所有在线用户
+    $on_fd = array();
+    foreach($onlineConn as $conn){
+        $connFd = $conn->getFd();
+        if( $connFd != $fd ) {
+            $on_fd[] = $connFd;
+        }
+    }
+
+
+    //广播
+    foreach($onlineConn as $conn){
+        $connFd = $conn->getFd();
+        if( $connFd == $fd ){
+            $server->send($fd,'您好,您已连接,编号:['.$fd.'],在线用户['.implode('|',$on_fd).']');
+        }else{
+            $server->send($connFd,'新用户上线,编号:['.$fd.']');
+        }
+    }
+
+
+
 });
 
 
@@ -52,9 +80,8 @@ Builder::$server->on(\rsk\server\server::EVENT_RSK_RECEIVE,function(\rsk\event\r
 
 
     $server = $event->server;
-    $fd = $event->fd;
-    $data = $event->receive_data;
-
+    $fd     = $event->fd;
+    $data   = $event->receive_data;
     /*
     $mess = '<h3>now time is : '.date('Y-m-d H:i:s',time()).'<h3>';
     $mess .= "<h3>online client num:".$server->getConnect()->count()."</h3>\r\n";
@@ -73,8 +100,30 @@ Builder::$server->on(\rsk\server\server::EVENT_RSK_RECEIVE,function(\rsk\event\r
     $server->send($fd,$response);
     */
 
+    //console('fd['.$fd.'] data : ['.$data.']','send-bin');
 
-    $server->send($fd,$data);
+
+
+
+    if(strpos($data,'|')){
+        //向指定客户端发送消息
+        list($send_fd,$data) = explode('|',$data);
+
+
+        if($server->getConnect($send_fd)){
+
+            //组合消息
+            $send_data = $data.'|'.$fd.PHP_EOL;
+            $server->send($send_fd,$send_data);
+            console("接收到[".$fd."]消息:".$data.',并向['.$send_fd.']返回','server-exec');
+            return;
+        }
+    }
+
+    //发送系统消息
+    $send_data = '您没有指定客户端,消息: ['.$data.'] 发送失败...'.PHP_EOL;
+    $server->send($fd,$send_data.PHP_EOL);
+    console("没有指定客户端发送,直接返回系统消息到:[".$fd."]",'server-exec');
 
 });
 
@@ -87,11 +136,24 @@ Builder::$server->on(\rsk\server\server::EVENT_RSK_RECEIVE,function(\rsk\event\r
  */
 Builder::$server->on(\rsk\server\server::EVENT_RSK_STOP,function(\rsk\event\stopEvent $event){
 
+
+
     $server = $event->server;
     $fd = $event->fd;
-    console('[[ stop ]]client stop connect [fd] '.$fd, 'server-bin');
-    console("\r\n=====================".$fd."====================================",'server-bin');
-    $server->close($fd);
+
+
+    //广播下线通知
+    $onlineConn = $server->getConnect();
+    foreach($onlineConn as $conn){
+        $connFd = $conn->getFd();
+        if( $connFd == $fd ){
+            //$server->send($fd,'您好,您已连接,编号:['.$fd.']');
+            $server->close($fd);
+        }else{
+            $server->send($connFd,'用户['.$fd.']下线');
+        }
+    }
+    console("\r\n=====================".$fd." off line ===============================",'server-bin');
 });
 
 

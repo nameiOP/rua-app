@@ -17,4 +17,4 @@ date_default_timezone_set('Asia/Shanghai');
 
 //运行
 $config = require(__DIR__ . '/../config/cli.php');
-(new rua\cli\app($config))->run('server');
+(new rua\cli\app($config))->run('client');

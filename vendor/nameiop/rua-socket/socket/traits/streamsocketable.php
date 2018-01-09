@@ -12,7 +12,7 @@ trait streamsocketable
     /**
      * @var int 连接编号
      */
-    protected $fd = 0;
+    public $fd = 0;
 
 
 
@@ -21,7 +21,7 @@ trait streamsocketable
      * php 套接字
      * @var
      */
-    protected $socket;
+    public $socket;
 
 
 
@@ -32,6 +32,9 @@ trait streamsocketable
      * false 非阻塞模式
      */
     public $block = true;
+
+
+
 
 
     /**
@@ -50,22 +53,61 @@ trait streamsocketable
 
 
     /**
-     * 创建socket套接字
-     * @param $protocol
-     * @param $ip
-     * @param $port
+     * 创建socket套接字,保证与 socketable 接口统一
      * @return bool
      * @throws \Exception
      * @author liu.bin 2017/10/26 15:10
      */
-    public function createSocket($host,$port){
+    public function createSocket(){
+
+        return true;
+    }
+
+
+
+
+    /**
+     * 客户端socket连接服务器
+     * @param string $host
+     * @param int $port
+     * @return bool
+     */
+    public function socketConnect($host,$port){
+
+        $address = "tcp://".$host.":".$port;
+        $err_no = 0;
+        $err_str = '';
+        $socket = stream_socket_client($address, $err_no, $err_str, 5);
+        if($socket){
+            $this->socket = $socket;
+            $this->fd = socket_to_fd($socket);
+            return true;
+        }else{
+            return false;
+        }
+    }
+
+
+
+
+
+    /**
+     * 服务端socket 监听端口
+     * @param string $host
+     * @param int $port
+     * @param int $backlog backlog是增加并发的关键
+     * @return bool
+     *
+     */
+    public function socketListen($host,$port,$backlog=102400){
+
 
         //初始化socket配置
         $context_option = array();
 
         //backlog 是增加并发的关键
         if (!isset($context_option['socket']['backlog'])) {
-            $context_option['socket']['backlog'] = 102400;
+            $context_option['socket']['backlog'] = $backlog;
         }
 
 
@@ -77,24 +119,21 @@ trait streamsocketable
         if(!isset($context_option['socket']['so_reuseport'])){
             $context_option['socket']['so_reuseport'] = 1;
         }
-
-
-
         $_context = stream_context_create($context_option);
-
-        //SIGPIPE;
         $param = 'tcp://'.$host.':'.$port;
         $socket = stream_socket_server($param, $errNo, $errStr,STREAM_SERVER_BIND | STREAM_SERVER_LISTEN,$_context);
-
-
         if (!$socket) {
-            throw new \Exception($errStr, $errNo);
+            return false;
         }
 
-		$this->socket = $socket;
+        $this->socket = $socket;
         $this->fd = socket_to_fd($this->socket);
+
+
         return true;
     }
+
+
 
 
 
@@ -105,16 +144,22 @@ trait streamsocketable
      * @return resource|bool
 	 */
 	public function socketAccept($socket){
-        //todo
-        $peer_name = '';
-		$msg_socket = stream_socket_accept($socket,0,$peer_name);
-        return is_resource($msg_socket) ? $msg_socket : false;
-	}
 
+        $peer_name = '';
+		$msg_socket = @stream_socket_accept($socket,5,$peer_name);
+        if(is_resource($msg_socket)){
+            list($address,$port) = explode(':',$peer_name);
+            return [$msg_socket,$address,$port];
+        }
+        return false;
+	}
 
 
     /**
      * 发送消息
+     * @param $socket
+     * @param $data
+     * @return int
      */
     public function socketSend($socket,$data){
         return stream_socket_sendto($socket,$data);
@@ -124,7 +169,21 @@ trait streamsocketable
     /**
      * 从socket读取数据
      *
-     * stream_socket_recvfrom 不支持阻塞读,所以需要自己判断
+     * stream_socket_recvfrom: 不支持阻塞读,所以自己实现了阻塞读
+     *
+     *      1:STREAM_OOB(系统自带)       协议的实现为了提高效率，往往在应用层传来少量的数据时不马上发送，而是等到数据缓冲区里有了一定量的数据时才一起发送，
+     *                                  但有些应用本身数据量并不多，而且需要马上发送，这时，就用紧急指针，这样数据就会马上发送，而不需等待有大量的数据。
+     *
+     *      2:STREAM_PEEK(系统自带)      从接受队列的起始位置接收数据，但不将他们从接受队列中移除。
+     *                                  STREAM_PEEK标志会将套接字接收队列中的可读的数据拷贝到缓冲区，但不会使套接子接收队列中的数据减少，
+     *                                  常见的是：例如调用recv或read后，导致套接字接收队列中的数据被读取后而减少，而指定了STREAM_PEEK标志，
+     *                                  可通过返回值获得可读数据长度，并且不会减少套接字接收缓冲区中的数据，所以可以供程序的其他部分继续读取。
+     *
+     *      3:MSG_WAITALL(自实现)        [阻塞读取] 在接收到指定长度的字符之前,进程将一直阻塞,一般用作消息长度是固定的协议
+     *
+     *      4:MSG_DONTWAIT(自实现)       [非阻塞模式] 接收指定长度的值,如果缓冲区没有数据,则立即返回。有数据,则按最大的读,并立即返回。
+     *
+     *
      *
      * @param $socket
      * @param $buffer_size
@@ -139,12 +198,11 @@ trait streamsocketable
         }elseif(MSG_WAITALL == $flag){
 
             //阻塞读 stream_socket_recvfrom不支持阻塞读,需要用到while
-            $left_buffer_len = $buffer_size;
+            $read_buffer_len = 0;
             $buffer = '';
-            while($left_buffer_len > 0){
-                $buffer .= stream_socket_recvfrom($socket,$left_buffer_len);
+            while($read_buffer_len < $buffer_size){
+                $buffer .= stream_socket_recvfrom($socket,$buffer_size);
                 $read_buffer_len = strlen($buffer);
-                $left_buffer_len = ($read_buffer_len < $left_buffer_len) ? ($left_buffer_len - $read_buffer_len) : 0;
             }
         }else{
             $buffer = stream_socket_recvfrom($socket,$buffer_size,$flag);
@@ -162,19 +220,20 @@ trait streamsocketable
 
 
     /**
-     * 从socket读取数据
-     *
      * socket_read:
-     *      1:PHP_NORMAL_READ   按最大长度读取,遇到 PHP_EOL 返回,应用程序需要自行判断消息完整;
-     *      2:PHP_BINARY_READ   等价于 socket_recv;
+     *      1:PHP_NORMAL_READ   按最大长度读取,遇到 PHP_EOL 返回,会过滤掉 PHP_EOL 字符;
+     *                          下一次消息就从下一行开始读取;
+     *                          这种模式适用于没有协议的情况,用于快速读取终端发送过来的数据,比如telnet;
+     *
+     *      2:PHP_BINARY_READ   最大按$buffer_size读取,有数据即返回;不会过滤掉PHP_EOL;
+     *                          这种模式适用于自定义协议的情况,由自定义协议判断数据中是否包涵PHP_EOL;
      *
      *
+     * 从客户端socket读取消息
      * @param $socket
      * @param $buffer_size
-     * @param $read_type
+     * @param int $read_type
      * @return bool|string
-     *
-     * @author liu.bin
      */
     public function socketRead($socket,$buffer_size,$read_type = PHP_BINARY_READ){
 
@@ -192,6 +251,7 @@ trait streamsocketable
             if( $buffer && ( false !== ($str_pos = strpos($buffer,PHP_EOL)) ) ){
                 //删除buffer读取
                 $buffer = stream_socket_recvfrom($socket,($str_pos + strlen(PHP_EOL)));
+                $buffer = substr($buffer,0,-(strlen(PHP_EOL)));
             }else{
                 $buffer = stream_socket_recvfrom($socket,$buffer_size);
             }

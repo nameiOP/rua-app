@@ -18,6 +18,14 @@ abstract class loop implements loopable,runnable{
 
 
 
+
+    /**
+     * @var int|null 超时
+     */
+    public $time_out = 0;
+
+
+
     /**
      * 打印类名称
      * @return string

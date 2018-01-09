@@ -12,7 +12,7 @@ trait socketable
     /**
      * @var int 连接编号
      */
-    protected $fd = 0;
+    public $fd = 0;
 
 
 
@@ -21,7 +21,7 @@ trait socketable
      * php 套接字
      * @var
      */
-    protected $socket;
+    public $socket;
 
 
     /**
@@ -50,14 +50,13 @@ trait socketable
 
     /**
      * 创建socket套接字
-     * @param $protocol
-     * @param $ip
+     * @param $host
      * @param $port
      * @return bool
      * @throws \Exception
      * @author liu.bin 2017/10/26 15:10
      */
-    public function createSocket($host,$port){
+    public function createSocket(){
 
 
         //创建socket
@@ -65,6 +64,47 @@ trait socketable
             console("socket_create() failed: reason: " . socket_strerror(socket_last_error()) );
             return false;
         }
+
+        $this->socket = $sock;
+        $this->fd = socket_to_fd($this->socket);
+
+        return true;
+    }
+
+
+
+
+    /**
+     * 客户端socket连接服务器
+     * @param string $host
+     * @param int $port
+     * @return bool
+     */
+    public function socketConnect($host,$port){
+
+        $connection = socket_connect($this->socket, $host, $port);
+
+        if(!$connection){
+            console("socket_create() failed: reason: " . socket_strerror(socket_last_error()) );
+            return false;
+        }
+
+
+        return $connection;
+    }
+
+
+    /**
+     * socket监听端口
+     *
+     * @param int $backlog backlog是增加并发的关键
+     * @return bool
+     *
+     */
+    public function socketListen($host,$port,$backlog=0){
+
+
+
 
         /**
          * 设置socket客户端连接心跳检测,默认7200秒,
@@ -79,33 +119,29 @@ trait socketable
 
 
         //开启地址重复利用
-
-        if (!socket_set_option($sock, SOL_SOCKET, SO_REUSEADDR, 1)) {
-            console('Unable to set option on socket: '. socket_strerror(socket_last_error()));
+        if (!socket_set_option($this->socket, SOL_SOCKET, SO_REUSEADDR, 1)) {
+            console('Unable to set option on socket: '. socket_strerror(socket_last_error($this->socket)));
             return false;
         }
 
 
 
 
-        if (socket_bind($sock, $host, $port) === false) {
-            console( "socket_bind() failed: reason: " . socket_strerror(socket_last_error($sock)));
+        if (socket_bind($this->socket, $host, $port) === false) {
+            console( "socket_bind() failed: reason: " . socket_strerror(socket_last_error($this->socket)));
             return false;
         }
 
 
-        //backlog是增加并发的关键
-        $backlog = 0;
-        if (socket_listen($sock, $backlog) === false) {
-            console( "socket_listen() failed: reason: " . socket_strerror(socket_last_error($sock)));
+        if (socket_listen($this->socket, $backlog) === false) {
+            console( "socket_listen() failed: reason: " . socket_strerror(socket_last_error($this->socket)));
             return false;
         }
-
-        $this->socket = $sock;
-        $this->fd = socket_to_fd($this->socket);
 
         return true;
     }
+
+
 
 
 
@@ -131,22 +167,32 @@ trait socketable
          */
 		$msg_socket = socket_accept($socket);
         if(is_resource($msg_socket)){
-            // todo
             $address = '';
             $port = 0;
             socket_getpeername($msg_socket,$address,$port);
-            return $msg_socket;
+            return [$msg_socket,$address,$port];
         }
         return false;
 	}
 
 
-
     /**
      * 发送消息
+     * @param $socket
+     * @param $data
+     * @return int
      */
     public function socketSend($socket,$data){
-        return socket_write($socket, $data, strlen($data));
+
+        //return socket_send($socket, $data, strlen($data));
+
+
+        if( socket_write($socket, $data, strlen($data)) ){
+            return true;
+        }else{
+            console( 'fail to write'.socket_strerror(socket_last_error()));
+            return false;
+        }
     }
 
 
@@ -154,17 +200,19 @@ trait socketable
     /**
      * 从socket读取数据
      *
-
      *
      * socket_recv:
      *      1:MSG_OOB           协议的实现为了提高效率，往往在应用层传来少量的数据时不马上发送，而是等到数据缓冲区里有了一定量的数据时才一起发送，
      *                          但有些应用本身数据量并不多，而且需要马上发送，这时，就用紧急指针，这样数据就会马上发送，而不需等待有大量的数据。
+     *
      *      2:MSG_PEEK          从接受队列的起始位置接收数据，但不将他们从接受队列中移除。
      *                          MSG_PEEK标志会将套接字接收队列中的可读的数据拷贝到缓冲区，但不会使套接子接收队列中的数据减少，
-     *                          常见的是：例如调用recv或read后，导致套接字接收队列中的数据被读取后而减少，而指定了MSG_PEEK标志，可通过返回值获得可读数据长度，
-     *                          并且不会减少套接字接收缓冲区中的数据，所以可以供程序的其他部分继续读取。
-     *      3:MSG_WAITALL       [阻塞读取]     在接收到指定长度的字符之前,进程将一直阻塞,一般用作消息长度是固定的协议
-     *      4:MSG_DONTWAIT      [非阻塞模式]   接收指定长度的值,如果缓冲区没有数据,则立即返回。有数据,则按最大的读,并立即返回。
+     *                          常见的是：例如调用recv或read后，导致套接字接收队列中的数据被读取后而减少，而指定了MSG_PEEK标志，
+     *                          可通过返回值获得可读数据长度，并且不会减少套接字接收缓冲区中的数据，所以可以供程序的其他部分继续读取。
+     *
+     *      3:MSG_WAITALL       [阻塞读取]     在接收到指定长度的字符之前,进程将一直阻塞,一般用作消息长度是固定的协议;
+     *
+     *      4:MSG_DONTWAIT      [非阻塞模式]   接收指定长度的值,如果缓冲区没有数据,则立即返回。有数据,则按最大的读,并立即返回;
      *
      *
      * @param $socket
@@ -190,8 +238,12 @@ trait socketable
 
     /**
      * socket_read:
-     *      1:PHP_NORMAL_READ   按最大长度读取,遇到 PHP_EOL 返回,应用程序需要自行判断消息完整;
-     *      2:PHP_BINARY_READ   等价于 socket_recv;
+     *      1:PHP_NORMAL_READ(无协议)    按最大长度读取,遇到 PHP_EOL 返回,会过滤掉 PHP_EOL 字符;
+     *                                  下一次消息就从下一行开始读取;
+     *                                  这种模式适用于没有协议的情况,用于快速读取终端发送过来的数据,比如telnet;
+     *
+     *      2:PHP_BINARY_READ(协议)      最大按$buffer_size读取,有数据即返回;不会过滤掉PHP_EOL;
+     *                                  这种模式适用于自定义协议的情况,由自定义协议判断数据中是否包涵PHP_EOL;
      *
      *
      * 从客户端socket读取消息
@@ -199,6 +251,8 @@ trait socketable
      * @param $buffer_size
      * @param int $read_type
      * @return bool|string
+     *
+     * @author liu.bin
      */
     public function socketRead($socket,$buffer_size,$read_type=PHP_BINARY_READ){
         $buffer = socket_read($socket, $buffer_size, $read_type);

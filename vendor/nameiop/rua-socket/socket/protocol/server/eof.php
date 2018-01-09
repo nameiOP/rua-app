@@ -32,6 +32,7 @@ class eof extends serverProtocol
 
         parent::__construct();
 
+
         /**
          * tcp 协议中,如果做短连接,需要设置为 CONNECT_ONCE;
          * 也可以根据协议内容,动态的设置TCP为长连接还是短连接
@@ -40,6 +41,11 @@ class eof extends serverProtocol
 
     }
 
+    
+
+    public function init($fd){
+        $this->fd = $fd;
+    }
 
 
 
@@ -93,9 +99,15 @@ class eof extends serverProtocol
 
         /**
          * 触发socket_select()读 如果长度内容为空,则可以判定是客户端发送FIN标识数据包,主动请求关闭;
+         *
+         * 在IO-loop模型中:
+         *      第一次读取消息为空,设置关闭连接,返回false,
+         *      connect发现是false,再次读取消息,发现是关闭连接,返回null,
+         *      connect发现是null,则关闭connect连接
+         *
          */
         if(is_empty($this->buffer)){
-            $this->over();
+            $this->bufferRecovery();
             $this->setConnectLife(self::CONNECT_CLOSE);
             return false;
         }
@@ -105,14 +117,14 @@ class eof extends serverProtocol
 
         //如果接收的字节 >= 最大长度的话，就不用接收消息,数据重置
         if($this->readLength >= $this->maxReadLength){
-            $this->over();
+            $this->bufferRecovery();
             $this->setConnectLife(self::CONNECT_CLOSE);
             return null;
         }
 
-
         if($this->_eof($this->buffer)){
             //到达EOF,不需要继续读取
+            $this->_readBuffer = $this->readBuffer;
             return true;
         }else{
             //没有到家边界,需要继续读取

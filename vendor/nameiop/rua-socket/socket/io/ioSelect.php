@@ -5,11 +5,8 @@ namespace rsk\io;
 
 
 use Builder;
-use rsk\event\connect\readEvent;
 use rsk\server\server;
 use rsk\server\connect;
-
-
 
 
 class ioSelect extends loop {
@@ -47,7 +44,7 @@ class ioSelect extends loop {
 
 
 
-
+        //循环(保证多客户端连接)
         while(true){
 
 
@@ -153,6 +150,7 @@ class ioSelect extends loop {
             return false;
         }
 
+
         //检测客户端是否连接成功
         if($connect->getStatus() == connect::STATUS_CLOSE){
             return false;
@@ -164,7 +162,10 @@ class ioSelect extends loop {
         }
 
 
-        console('accept success , client is : ['.$connect->getFd().']','select');
+        $fd = $connect->getFd();
+        $address = $connect->_from_address;
+        $port = $connect->_from_port;
+        console('accept success, id ['.$fd.'] ,address ['.$address.'] ,port ['.$port.']','ioloop');
 
         return true;
 
@@ -204,15 +205,7 @@ class ioSelect extends loop {
          * http长连接:读取数据(非阻塞),发送数据 | 读取数据(非阻塞)[有数据],发送数据 ... | 读取数据(非阻塞)[超时]->关闭连接;
          *
          */
-        $connReadEvent = $connect->getReadEvent();
-
-        $protocol = Builder::$app->get('protocol');
-        if('eof' == $protocol->getName()){
-            $connReadEvent->read_type = readEvent::SOCKET_READ;
-            $connReadEvent->read_param = readEvent::SOCKET_READ_PARAM_NORMAL;//按 长度 和 PHP_EOL 读取
-        }
-
-
+        $connReadEvent = Builder::$app->get('protocol')->getReadEvent();
 
         //非阻塞模式读取消息,在socket_select模式下,肯定会读取到消息
         $connect->trigger(connect::EVENT_READ,$connReadEvent);
@@ -225,11 +218,10 @@ class ioSelect extends loop {
 
             $receiveEvent       = $this->server->getReceiveEvent();
             $receiveEvent->fd   = $fd;
-            $receiveEvent->receive_data = $connect->getData();
+            $receiveEvent->receive_data = $connect->getReadData();
 
             //执行接收消息事件
             $this->server->trigger(server::EVENT_RSK_RECEIVE,$receiveEvent);
-            sleep(1);
             return true;
         }
 
@@ -259,7 +251,7 @@ class ioSelect extends loop {
 
             $receiveEvent       = $this->server->getReceiveEvent();
             $receiveEvent->fd   = $fd;
-            $receiveEvent->receive_data = $connect->getData();;
+            $receiveEvent->receive_data = $connect->getReadData();;
             //执行接收消息事件
             $this->server->trigger(server::EVENT_RSK_RECEIVE,$receiveEvent);
 

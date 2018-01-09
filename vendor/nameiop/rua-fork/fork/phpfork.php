@@ -85,7 +85,6 @@ class phpfork{
         }
 
 
-
         // fork 子进程
         $pid = pcntl_fork();
 
@@ -106,13 +105,14 @@ class phpfork{
                 $this->pid = $pid;
             }
 
-
             if(is_null($this->_runnable)){
                 $this->run();
             }else{
                 $this->_runnable->run();
             }
 
+
+            //不再执行从父进程拷贝过来的代码,直接中断
             exit();
         }
 

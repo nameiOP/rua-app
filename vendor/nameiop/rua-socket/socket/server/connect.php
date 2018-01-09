@@ -9,18 +9,17 @@ namespace rsk\server;
 
 
 use Builder;
-use app\protocol\http;
 use rua\traits\eventable;
 use rsk\traits\socketable;
 use rsk\traits\streamsocketable;
 use rsk\event\connect\readEvent;
-
+use rsk\protocol\server\serverProtocol;
 
 class connect {
 
 
-	//use streamsocketable,eventable;
-    use socketable,eventable;
+	use streamsocketable,eventable;
+    //use socketable,eventable;
 
 
     //活动状态:长连接
@@ -43,30 +42,38 @@ class connect {
 
 
     //当前连接状态
-    private $status;
+    public $status;
+
+
 
 
     /**
-     * @var \rsk\protocol\protocol
+     * @var string 客户端地址
      */
-    protected $protocol;
+    public $_from_address = '';
 
 
     /**
-     * 接收客户端消息 触发事件参数
-     * @var object|null
+     * @var int 客户端端口
      */
-    private $_readEvent;
+    public $_from_port = 0;
+
+
+    /**
+     * @var int 连接服务器时间⌚️
+     */
+    public $_accept_time = 0;
+
+
+
+    //协议
+    private $_protocol = null;
 
 
     /**
      * 初始化
-     * @param $socket
      */
-    public function __construct($socket){
-        $this->socket = $socket;
-        $this->fd = socket_to_fd($socket);
-        $this->status = $this->fd ? self::STATUS_ACTIVE : self::STATUS_CLOSE;
+    public function __construct(){
     }
 
 
@@ -82,6 +89,15 @@ class connect {
     }
 
 
+    /**
+     * 获取协议对象
+     */
+    public function getProtocol(){
+        if(is_null($this->_protocol)){
+            $this->_protocol = clone Builder::$app->get('protocol');
+        }
+        return $this->_protocol;
+    }
 
 
 
@@ -93,8 +109,6 @@ class connect {
     public function setStatus($status){
         $this->status = $status;
     }
-
-
 
 
 
@@ -122,7 +136,7 @@ class connect {
 
 
         //获取协议对象
-        $protocol = Builder::$app->get('protocol');
+        $protocol = $this->getProtocol();
 
 
 
@@ -159,8 +173,6 @@ class connect {
          */
         $eof = $protocol->readEOF($buffer);
 
-
-
         // 1) 消息不完整,继续读取
         if(false === $eof){
             $this->trigger(self::EVENT_READ,$readEvent);
@@ -182,13 +194,13 @@ class connect {
             //根据具体协议判断客户端连接是否需要断开;
             switch($protocol->getConnectLife()){
 
-                case http::CONNECT_KEEP:
+                case serverProtocol::CONNECT_KEEP:
                     $this->status = self::STATUS_ACTIVE;
                     break;
-                case http::CONNECT_CLOSE:
+                case serverProtocol::CONNECT_CLOSE:
                     $this->status = self::STATUS_CLOSE;
                     break;
-                case http::CONNECT_ONCE:
+                case serverProtocol::CONNECT_ONCE:
                     $this->status = self::STATUS_PEND;
                     break;
                 default:
@@ -207,31 +219,12 @@ class connect {
 
 
 
-
-    /**
-     * 接收客户端消息事件参数
-     * @return \rsk\event\connect\readEvent;
-     */
-    public function getReadEvent(){
-
-        if(is_null($this->_readEvent)){
-            $this->_readEvent = new readEvent();
-            $this->_readEvent->connect = $this;
-        }
-        $this->_readEvent->fd = $this->getFd();
-        return $this->_readEvent;
-
-    }
-
-
-
-
     /**
      * 获取消息
      * @return string
      */
-    public function getData(){
-        return Builder::$app->get('protocol')->getData();
+    public function getReadData(){
+        return $this->getProtocol()->getReadData();
     }
 
 

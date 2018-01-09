@@ -17,13 +17,13 @@ class app extends application{
     /**
      * @var array
      */
-    public $server;
+    //public $server;
 
 
     /**
      * @var array
      */
-    public $client;
+    //public $client;
 
 
     /**
@@ -42,6 +42,8 @@ class app extends application{
 
     /**
      * 处理终端命令
+     * @param string $type 运行模式
+     *
      * @author liu.bin 2017/10/24 17:12
      */
     public function handleCommand($type='server'){

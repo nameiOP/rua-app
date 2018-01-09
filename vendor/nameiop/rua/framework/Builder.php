@@ -18,7 +18,7 @@ class Builder extends BaseBuilder{
 
     /**
      *
-     * @var
+     * @var rsk\client\client
      */
     public static $client;
 

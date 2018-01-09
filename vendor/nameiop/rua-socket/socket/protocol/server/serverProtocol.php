@@ -3,7 +3,7 @@ namespace rsk\protocol\server;
 
 
 use rsk\protocol\protocol;
-
+use rsk\event\connect\readEvent;
 
 
 abstract class serverProtocol extends protocol
@@ -36,6 +36,12 @@ abstract class serverProtocol extends protocol
 
 
 
+    /**
+     * 接收客户端消息 触发事件参数
+     * @var object|null
+     */
+    private $_readEvent;
+
 
     /**
      * 构造器
@@ -63,11 +69,40 @@ abstract class serverProtocol extends protocol
     }
 
 
+
+
+
+
+
+    /**
+     * 接收客户端消息事件参数
+     * @return \rsk\event\connect\readEvent;
+     */
+    public function getReadEvent(){
+
+        if(is_null($this->_readEvent)){
+
+            //创建对象,可以根据协议的类型,设置消息读取的方式
+            $eventConfig = [
+                'class'         => '\rsk\event\connect\readEvent',
+                'read_type'     => readEvent::SOCKET_READ,
+                'read_param'    => readEvent::SOCKET_READ_PARAM_BINARY,//按指定长度读
+            ];
+            $this->_readEvent = \Builder::createObject($eventConfig);
+        }
+
+        return $this->_readEvent;
+
+    }
+
+
+
+
     /**
      * 重置数据
      * @author liu.bin 2017/9/30 10:51
      */
-    public function over()
+    public function bufferRecovery()
     {
         $this->buffer = '';
         $this->readBuffer = '';

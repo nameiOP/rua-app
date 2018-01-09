@@ -103,7 +103,7 @@ Builder::$app->get('command')->on(EVENT_CMD_SERVER_RESTART,function($event){
 Builder::$app->get('command')->on(EVENT_CMD_CLIENT_START,function($event) {
 
 
-    //1:启动服务器,阻塞
+    //1:启动客户端,阻塞
     php_exec(Builder::getAlias(Builder::$app->client_exec));
 
 
@@ -145,10 +145,9 @@ Builder::$app->get('command')->on(EVENT_CMD_CLIENT_RESTART,function($event){
 
 /**
  * 注册应用启动事件
- * app->run()
  */
 Builder::$app->on(EVENT_APP_RUN,function(){
-    console('hook event_app_run');
+    //console('[event_app_run]');
 });
 
 

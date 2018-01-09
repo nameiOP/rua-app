@@ -1,9 +1,9 @@
 <?php
 
 
-namespace rsk\event;
+namespace rsk\event\client;
 
-class receiveEvent extends serverEvent{
+class receiveEvent extends clientEvent{
 
 
 

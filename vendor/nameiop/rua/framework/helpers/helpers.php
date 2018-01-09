@@ -1173,3 +1173,48 @@ if(! function_exists('is_empty')){
     }
 
 }
+
+
+/**
+ * 显示系统消息
+ */
+if(! function_exists('show_system')){
+
+    function show_system($mess){
+        echo '[ -SYSTEM '.date("H:i:s").'- ] : ' . trim($mess,PHP_EOL) . PHP_EOL;
+        echo '-----------------------------------------------------'.PHP_EOL;
+    }
+
+}
+
+
+/**
+ * 显示朋友发来的消息
+ */
+if(! function_exists('show_from')){
+
+    function show_from($mess,$fd=0){
+        echo '[ -FROM - '.$fd.'] : ' . trim($mess,PHP_EOL) . PHP_EOL;
+        echo '----------------------------------------------------'.PHP_EOL;
+    }
+
+}
+
+
+/**
+ * 显示自己发送的消息
+ */
+if(! function_exists('show_send')){
+
+    function show_send($mess,$fd=''){
+
+        //默认窗口为40个字符大小
+        $length = 40;
+        $mess = str_pad(trim($mess,PHP_EOL),$length," ",STR_PAD_LEFT);
+        echo  $mess.' : [ -SEND-'.$fd.' ]' . PHP_EOL;
+        echo '----------------------------------------------------'.PHP_EOL;
+    }
+
+}
+
+

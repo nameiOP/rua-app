@@ -12,6 +12,8 @@ class http extends serverProtocol
 {
 
 
+
+
     //eof边界检测符
     private $headEof = "\r\n\r\n";
 
@@ -48,6 +50,14 @@ class http extends serverProtocol
     private $_response;
 
 
+    /**
+     * @var int 默认单次读取buffer大小
+     */
+    private $_bufferSize = 0;
+
+
+
+
 
 
     /**
@@ -58,14 +68,24 @@ class http extends serverProtocol
         parent::__construct();
 
 
-        $this->bufferSize = 65535;
-        $this->maxReadLength = 10485760;
-
-        // http协议中,默认为短连接,需要由keep_alive开启长连接
-        $this->setConnectLife(self::CONNECT_ONCE);
-
 
     }
+
+
+    /**
+     * 协议初始化
+     */
+    public function init(){
+
+
+        //设置默认的 bufferSize
+        $this->_bufferSize = $this->bufferSize;
+
+        // http协议中,默认为短连接,需要由 keep_alive 条件开启长连接
+        $this->setConnectLife(self::CONNECT_ONCE);
+    }
+
+
 
 
     /**
@@ -147,7 +167,7 @@ class http extends serverProtocol
          * 触发socket_select()读 如果长度内容为空,则可以判定是客户端发送FIN标识数据包,主动请求关闭;
          */
         if(is_empty($this->buffer) ){
-            $this->over();
+            $this->bufferRecovery();
             $this->setConnectLife(self::CONNECT_CLOSE);
             return false;
         }
@@ -161,7 +181,7 @@ class http extends serverProtocol
          * 就不用接收消息,防止内存泄漏,需要数据重置
          */
         if($this->readLength >= $this->maxReadLength){
-            $this->over();
+            $this->bufferRecovery();
             return null;
         }
 
@@ -219,6 +239,10 @@ class http extends serverProtocol
 
 
 
+
+        //读取完整
+        $this->_readBuffer = $this->readBuffer;
+        return true;
 
     }
 
@@ -392,14 +416,14 @@ class http extends serverProtocol
 
 
     /**
-     * 重置
+     * buffer回收重置
      */
-    public function over(){
-        $this->_headEnd = false;
-        $this->_requestHeader = '';
-        $this->_requestBody = '';
-        parent::over();
-        $this->bufferSize = 65535;
+    public function bufferRecovery(){
+        parent::bufferRecovery();
+        $this->_headEnd         = false;
+        $this->_requestHeader   = '';
+        $this->_requestBody     = '';
+        $this->bufferSize       = $this->_bufferSize;
         $this->_getRequest()->initBuffer('');
     }
 

@@ -24,8 +24,8 @@ abstract class baseServer {
 
 
 
-	//use streamsocketable,macroable,eventable;
-	use socketable,macroable,eventable;
+	use streamsocketable,macroable,eventable;
+	//use socketable,macroable,eventable;
 
 
 	/**
@@ -120,11 +120,18 @@ abstract class baseServer {
 		/**
 		 * 创建 socket
 		 */
-        $result = $this->createSocket($this->host,$this->port);
+        $result = $this->createSocket();
 		if(false === $result){
-            throw new \Exception('socket error');
+            throw new \Exception('createSocket error');
 		}
 
+
+
+		//监听端口
+		$result = $this->socketListen($this->host,$this->port);
+		if(false === $result){
+			throw new \Exception('socketListen error');
+		}
 
 
 
@@ -169,24 +176,39 @@ abstract class baseServer {
 
 		$mSocket = is_null($socket) ? $this->socket : $socket;
 
-		$socket = $this->socketAccept($mSocket);
-		if(!$socket){
+		//接受客户端连接
+		$accept = $this->socketAccept($mSocket);
+		if(false === $accept){
 			return false;
 		}
 
-		//创建连接
-		$conn = new connect($socket);
-		if($conn->getStatus()){
-			if($this->addConnect($conn,$conn->getFd())){
+		list($socket,$address,$port) = $accept;
+
+		//创建客户端连接对象
+		$connConfig = [
+			'class'			=> '\rsk\server\connect',
+			'socket'		=> $socket,
+			'fd'			=> socket_to_fd($socket),
+			'status'		=> connect::STATUS_ACTIVE,
+			'_accept_time'	=> time(),
+			'_from_address' => $address,
+			'_from_port'	=> $port,
+
+		];
+		$conn = \Builder::createObject($connConfig);
+
+		//加入队列
+		if($conn && $this->addConnect($conn,$conn->getFd())){
 
 
-				//server 执行触发事件 [连接事件]
-				$acceptEvent = $this->getAcceptEvent();
-				$acceptEvent->fd = $conn->getFd();
-				$this->trigger(self::EVENT_RSK_ACCEPT,$acceptEvent);
+			//初始化协议内容
+			\Builder::$app->get('protocol')->init($conn->getFd());
 
-				return $conn;
-			}
+			//server 执行触发事件 [连接事件]
+			$acceptEvent = $this->getAcceptEvent();
+			$acceptEvent->fd = $conn->getFd();
+			$this->trigger(self::EVENT_RSK_ACCEPT,$acceptEvent);
+			return $conn;
 		}
 
 		//注销socket
@@ -194,6 +216,8 @@ abstract class baseServer {
 		unset($conn);
 		return false;
 	}
+
+
 
 
 	/**
@@ -206,6 +230,8 @@ abstract class baseServer {
 		$socket = $this->getConnSocket($fd);
 		return $this->socketSend($socket,$data);
 	}
+
+
 
 
 	/**
@@ -276,7 +302,7 @@ abstract class baseServer {
 
 
 	/**
-	 * 启动后界面
+	 * 启动界面
 	 */
 	abstract public function displayUI();
 

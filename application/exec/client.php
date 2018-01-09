@@ -1,6 +1,8 @@
 <?php
 
 
+
+
 /**
  * 初始化服务器信息
  *
@@ -11,15 +13,12 @@ Builder::$client = Builder::$app->get('client');
 
 
 /**
- * socket 启动
+ * 客户端socket 启动
  */
-Builder::$server->on(\rsk\server\server::EVENT_RSK_START,function( \rsk\event\startEvent $event){
+Builder::$client->on(\rsk\client\client::EVENT_RSK_START,function( \rsk\event\client\startEvent $event){
 
 
-    $server = $event->server;
-
-    console('start');
-
+    show_system('客户端启动成功');
 
 });
 
@@ -27,16 +26,23 @@ Builder::$server->on(\rsk\server\server::EVENT_RSK_START,function( \rsk\event\st
 
 
 /**
- * socket 连接
+ * 客户端socket 连接成功
  *
  *
  */
-Builder::$server->on(\rsk\server\server::EVENT_RSK_CONNECT,function(\rsk\event\connectEvent $event){
+Builder::$client->on(\rsk\client\client::EVENT_RSK_CONNECT,function(\rsk\event\client\connectEvent $event){
 
-    $server = $event->server;
-    $fd = $event->fd;
-    //console($fd . ' 连接','客户端');
-    //$server->send($fd,'欢迎连接');
+
+
+    $client = $event->client;
+
+
+    //新起一个进程 接收服务器的消息
+    $fork = new \app\pforks\fork();
+    $fork->client = $client;
+    $fork->start();
+
+
 });
 
 
@@ -44,30 +50,23 @@ Builder::$server->on(\rsk\server\server::EVENT_RSK_CONNECT,function(\rsk\event\c
 
 
 /**
- * 接收客户端消息
- *
- *
+ * 接收服务端消息
  */
-Builder::$server->on(\rsk\server\server::EVENT_RSK_RECEIVE,function(\rsk\event\receiveEvent $event){
+Builder::$client->on(\rsk\client\client::EVENT_RSK_RECEIVE,function(\rsk\event\client\receiveEvent $event){
+
+    $data = $event->receive_data;
 
 
-    $server = $event->server;
-    $fd = $event->fd;
-    //$data = $event->receive_data;
+    if(strpos($data,'|')){
+        list($data,$from_fd) = explode('|',$data);
+        $from_fd = trim($from_fd,PHP_EOL);
+        show_from($data,$from_fd);
+    }else{
+        show_system($data);
+    }
 
-    $mess = 'now time is : '.date('Y-m-d H:i:s',time());
-    $length = strlen($mess);
 
-    $response = "HTTP/1.1 200 OK\r\n";
-    $response .= "Date: Mon, 10 Aug 2015 06:22:08 GMT\r\n";
-    $response .= "Connection: keep-alive\r\n";
-    $response .= "Content-Length: ".$length."\r\n";
-    $response .= "Content-Type: text/html;charset=utf-8\r\n\r\n";
-    $response .= $mess;
-    $response .= "\r\n";
 
-    console('send to client fd :'.$fd .' - online num :'.count($server->getConnSocket()),'send');
-    $server->send($fd,$response);
 });
 
 
@@ -77,13 +76,9 @@ Builder::$server->on(\rsk\server\server::EVENT_RSK_RECEIVE,function(\rsk\event\r
  * 客户端断开
  *
  */
-Builder::$server->on(\rsk\server\server::EVENT_RSK_STOP,function(\rsk\event\stopEvent $event){
+Builder::$client->on(\rsk\client\client::EVENT_RSK_STOP,function(\rsk\event\client\stopEvent $event){
 
-    $server = $event->server;
-    $fd = $event->fd;
-    console('client stop connect [fd] '.$fd, 'server');
-    console("\r\n==============================\r\n");
-    $server->close($fd);
+
 });
 
 
@@ -95,7 +90,7 @@ Builder::$server->on(\rsk\server\server::EVENT_RSK_STOP,function(\rsk\event\stop
  * 重启
  *
  */
-Builder::$server->on('RESTART',function($event){
+Builder::$client->on('RESTART',function($event){
 
     console('restart');
 });
@@ -104,6 +99,29 @@ Builder::$server->on('RESTART',function($event){
 
 
 
+// 启动 client
+Builder::$client->start();
 
-// 启动 server
-Builder::$server->start();
+//接收用户输入
+while($input = fgets(STDIN)){
+    Builder::$client->send($input.PHP_EOL);
+    show_send($input);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

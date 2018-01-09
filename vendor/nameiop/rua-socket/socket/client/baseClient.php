@@ -1,20 +1,15 @@
 <?php
-namespace rsk\server;
+namespace rsk\client;
 
 
-use rsk\io\ioFork;
-use rsk\io\ioLoop;
-use rsk\io\ioSelect;
-use rsk\event\startEvent;
+
+
 use rua\traits\eventable;
 use rua\traits\macroable;
 use rsk\traits\socketable;
-use rsk\event\stopEvent;
-use rsk\event\connectEvent;
-use rsk\event\receiveEvent;
-
 use rsk\traits\streamsocketable;
-
+use rsk\event\client\startEvent;
+use rsk\event\client\connectEvent;
 
 
 /**
@@ -32,23 +27,84 @@ abstract class baseClient {
 
 
 
+	//客户端启动事件
+	const EVENT_RSK_START = 'event_rsk_start';
 
+	//客户端连接成功事件
+	const EVENT_RSK_CONNECT = 'event_rsk_connect';
+
+	//接收服务端消息事件
+	const EVENT_RSK_RECEIVE = 'event_rsk_receive';
+
+	//客户端停止事件
+	const EVENT_RSK_STOP = 'event_rsk_stop';
+
+
+	/**
+	 * 接连服务器
+	 * @var string
+	 */
+	public $host = '';
+
+
+	/**
+	 * 连接端口
+	 * @var int
+	 */
+	public $port = 0;
 
 
 
 
 
     /**
-     * 启动服务器
+     * 启动客户端
      * @author liu.bin 2017/9/27 14:56
      */
-    public function start(){
+    public function start()
+	{
+
+		/**
+		 * 创建 socket
+		 */
+		$result = $this->createSocket();
+		if(false === $result){
+			throw new \Exception('createSocket error');
+		}
 
 
+		//触发事件
+		$startEvent = new startEvent();
+		$startEvent->client = $this;
+		$this->trigger(self::EVENT_RSK_START,$startEvent);
+
+
+
+		//连接服务器
+		$result = $this->socketConnect($this->host,$this->port);
+		if(false === $result){
+			throw new \Exception('socketConnect error');
+		}
+
+
+
+		//初始化服务器信息
+		$this->init();
+
+
+
+
+		//展示ui
+		$this->displayUI();
+
+
+		//触发连接事件
+		$connEvent = new connectEvent();
+		$connEvent->client = $this;
+		$this->trigger(self::EVENT_RSK_CONNECT,$connEvent);
 
 
 	}
-
 
 
 
@@ -59,46 +115,59 @@ abstract class baseClient {
 
 
 	/**
-	 * 连接事件
+	 * 发送消息到服务端
+	 * @param string $data
+	 * @author liu.bin 2017/9/27 15:02
 	 */
-	public function getConnectEvent(){
-		if(is_null($this->connectEvent)){
-			$this->connectEvent = new connectEvent();
-			$this->connectEvent->server = $this;
-		}
-		$this->connectEvent->fd = 0;
-		return $this->connectEvent;
+	public function send($data){
+		$this->socketSend($this->socket,$data);
+	}
+
+
+
+
+
+
+
+	/**
+	 * 客户端接收服务端消息: socket_read
+	 * @param resource|null $socket 客户端socket
+	 * @return string
+	 * @author liu.bin 2017/9/29 16:59
+	 */
+	public function receive($socket=null){
+
+		$socket = is_null($socket) ? $this->socket : $socket;
+		return $this->socketRead($socket,1000);
+	}
+
+
+
+	/**
+	 * 重启客户端
+	 * @author liu.bin 2017/9/27 14:57
+	 */
+	public function reload(){
+
 	}
 
 
 	/**
-	 * 接收消息事件
-	 * @return receiveEvent
+	 * 关闭客户端
+	 * @author liu.bin 2017/9/27 14:57
 	 */
-	public function getReceiveEvent(){
+	public function stop(){
 
-		if(is_null($this->receiveEvent)){
-			$this->receiveEvent = new receiveEvent();
-			$this->receiveEvent->server = $this;
-		}
-		$this->receiveEvent->fd = 0;
-		return $this->receiveEvent;
 	}
 
 
 	/**
-	 * socket停止事件
+	 * 关闭客户端
+	 * @author liu.bin 2017/9/27 14:58
 	 */
-	public function getStopEvent(){
+	public function shutdown(){
 
-		if(is_null($this->stopEvent)){
-			$this->stopEvent = new stopEvent();
-			$this->stopEvent->server = $this;
-		}
-		$this->stopEvent->fd = 0;
-		return $this->stopEvent;
 	}
-
 
 
 
@@ -108,7 +177,7 @@ abstract class baseClient {
 	 * 初始化init
 	 * @author liu.bin 2017/10/31 11:54
 	 */
-	abstract public function init();
+	abstract protected function init();
 
 
 	/**

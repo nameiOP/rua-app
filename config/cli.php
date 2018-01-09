@@ -48,8 +48,9 @@
 			 * io模型
 			 */
 			'io'=>[
-				'class'=>'rsk\io\ioSelect',
-				//'class'=>'rsk\io\ioLoop',
+				'class'	=>'rsk\io\ioSelect',
+				//'class'		=>'rsk\io\ioLoop',
+				//'time_out'	=> null,
 			],
 
 
@@ -59,22 +60,9 @@
 			'protocol'=>[
 				'name'=>'eof',
 				'class'=>'rsk\protocol\server\eof',
-
+				'bufferSize'=>10,//http:65535
+				'maxReadLength'=>50,//http:10485760
 			],
-
-
-
-			/**
-			 * 服务器配置信息
-			 */
-/*
-			'server'=>[
-				'class'=>'rsk\server\server',
-				'host'=>'0.0.0.0',
-				'port'=>8000,
-				'maxConnectLength'=>5
-			],
-*/
 
 
 			/**
@@ -83,7 +71,7 @@
 
 			'server'=>[
 				'class'=>'rsk\server\server',
-				'host'=>'0.0.0.0',
+				'host'=>'127.0.0.1',
 				'port'=>8000,
 				'maxConnectLength'=> 5,
 			],
@@ -94,6 +82,8 @@
 			 */
 			'client'=>[
 				'class'=>'rsk\client\client',
+				'host'=>'127.0.0.1',
+				'port'=>8000
 			],
 
 
