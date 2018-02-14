@@ -4,16 +4,16 @@
     "keywords": ["php", "socket"],
     "authors" : [
         {
-            "name": "liubin",
+            "name": "liu.bin",
             "email": "ruabye@126.com",
             "homepage": "http://blog.ruaby.com"
         }
     ],
     "require": {
         "php": ">=5.6",
-    	"nameiop/rua":"~v0.1.1",
-        "nameiop/rua-socket":"~0.1.0",
-        "nameiop/rua-fork": "~v0.1.1"
+    	"nameiop/rua":"~0.0.2",
+        "nameiop/rua-socket":"~0.0.2",
+        "nameiop/rua-fork": "^0.0.2"
     },
     "require-dev": {
     },
